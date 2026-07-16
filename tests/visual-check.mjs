@@ -59,9 +59,16 @@ async function checkViewport(browser, name, viewport, mobile = false) {
   await page.locator('h1').waitFor({ state: 'visible' });
 
   await page.locator('img').evaluateAll((images) => images.forEach((image) => { image.loading = 'eager'; }));
+  const pageHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  for (let position = 0; position < pageHeight; position += Math.max(300, viewport.height * 0.7)) {
+    await page.evaluate((y) => window.scrollTo(0, y), position);
+    await page.waitForTimeout(35);
+  }
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await page.waitForTimeout(180);
   await page.waitForFunction(() => [...document.images].every((image) => image.complete), undefined, { timeout: 10_000 });
+  await page.locator('img').evaluateAll(async (images) => {
+    await Promise.all(images.map((image) => image.decode?.().catch(() => undefined)));
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const diagnostics = await page.evaluate(() => ({
@@ -70,20 +77,25 @@ async function checkViewport(browser, name, viewport, mobile = false) {
     brokenImages: [...document.images].filter((image) => image.naturalWidth === 0).map((image) => image.src),
     robots: document.querySelector('meta[name="robots"]')?.content,
     title: document.title,
+    logoRatio: (() => {
+      const logo = document.querySelector('.site-logo');
+      const rect = logo?.getBoundingClientRect();
+      return rect?.height ? rect.width / rect.height : 0;
+    })(),
   }));
   if (diagnostics.scrollWidth > diagnostics.viewportWidth + 1) throw new Error(`Overflow em ${name}: ${JSON.stringify(diagnostics)}`);
   if (diagnostics.brokenImages.length) throw new Error(`Imagens inválidas em ${name}: ${diagnostics.brokenImages.join(', ')}`);
   if (diagnostics.robots !== 'noindex,nofollow') throw new Error(`Robots inválido em ${name}: ${diagnostics.robots}`);
   if (!diagnostics.title.includes('Restaurante Sampaio')) throw new Error(`Título inválido em ${name}.`);
+  if (diagnostics.logoRatio < 1.9 || diagnostics.logoRatio > 2.1) throw new Error(`Logótipo distorcido em ${name}: ${diagnostics.logoRatio}`);
 
   const expectedLinks = [
     'tel:+351' + '255534540',
-    'https://ementa.restaurantesampaio.pt/',
     'https://g.page/restaurantesampaio-pt?share',
     'https://g.page/restaurantesampaio-pt/review?rc',
-    'https://restaurantesampaio.pt/',
     'https://facebook.com/restaurantesampaiopt',
     'https://www.instagram.com/restaurantesampaio',
+    '#ementa',
   ];
   for (const href of expectedLinks) {
     if ((await page.locator(`a[href="${href}"]`).count()) === 0) throw new Error(`Link em falta em ${name}: ${href}`);
@@ -99,6 +111,30 @@ async function checkViewport(browser, name, viewport, mobile = false) {
     if ((await toggle.getAttribute('aria-expanded')) !== 'false') throw new Error('O menu móvel não fechou com Escape.');
     if (!(await page.locator('.mobile-actions').isVisible())) throw new Error('Ações rápidas móveis invisíveis.');
   }
+
+  const meatFilter = page.locator('[data-menu-filter="carne"]');
+  await meatFilter.click();
+  if ((await meatFilter.getAttribute('aria-pressed')) !== 'true') throw new Error(`Filtro de ementa não ficou ativo em ${name}.`);
+  const meatItems = page.locator('#menu-list .menu-item');
+  if ((await meatItems.count()) < 4 || !(await page.locator('#menu-list').innerText()).includes('Bife à Sampaio')) {
+    throw new Error(`Filtro de carne não renderizou a ementa esperada em ${name}.`);
+  }
+
+  const firstPhoto = page.locator('[data-lightbox]').first();
+  await firstPhoto.scrollIntoViewIfNeeded();
+  await firstPhoto.click();
+  const lightbox = page.locator('.lightbox');
+  await lightbox.waitFor({ state: 'visible' });
+  const firstCaption = await page.locator('#lightbox-caption').innerText();
+  await page.locator('.lightbox-next').click();
+  if ((await page.locator('#lightbox-caption').innerText()) === firstCaption) throw new Error(`Lightbox não avançou em ${name}.`);
+  await page.locator('.lightbox-close').click();
+  await lightbox.waitFor({ state: 'hidden' });
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator('.back-to-top').waitFor({ state: 'visible' });
+  await page.locator('.back-to-top').click();
+  await page.waitForFunction(() => window.scrollY < 2);
 
   await assertAxe(page, name);
   await page.evaluate(() => document.activeElement?.blur());
@@ -136,7 +172,7 @@ async function main() {
     await stopServer(server);
   }
 
-  console.log('Visual QA: desktop, tablet, mobile, sem JS, links, imagens e Axe — OK');
+  console.log('Visual QA: desktop, tablet, mobile, sem JS, links, imagens, ementa, lightbox, topo e Axe — OK');
   console.log(`Screenshots: ${new URL('desktop-1440.png', outputDir).pathname} e ${new URL('mobile-375.png', outputDir).pathname}`);
 }
 

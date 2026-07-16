@@ -1,27 +1,32 @@
 # Sources
 
-## Verified facts used in this demo
+## Verified business information
 
 - Restaurante Sampaio
-- Categoria: Restaurante
-- Morada: Av. Jorge Nuno Pinto da Costa 862, 4630-291 Marco de Canaveses, Portugal
-- Telefone: +351 255 534 540
-- Avaliação Google: 4,5
-- Site oficial: https://restaurantesampaio.pt/
-- Ementa: https://ementa.restaurantesampaio.pt/
+- Category: restaurant / Portuguese cuisine
+- Address: Av. Jorge Nuno Pinto da Costa 862, 4630-291 Marco de Canaveses, Portugal
+- Phone: +351 255 534 540
+- Official website: https://restaurantesampaio.pt/
+- Previous digital menu: https://ementa.restaurantesampaio.pt/
 - Facebook: https://facebook.com/restaurantesampaiopt
 - Instagram: https://www.instagram.com/restaurantesampaio
 - Google Maps: https://g.page/restaurantesampaio-pt?share
-- Google review: https://g.page/restaurantesampaio-pt/review?rc
-- Brand colors from brief: #6B2424 and #E6E1CB
+- Google review link: https://g.page/restaurantesampaio-pt/review?rc
 
-## Local assets provided
+## Image assets
 
-- `src/assets/restaurante-sampaio-logo.webp`
-- `src/assets/restaurante-sampaio-hero.webp`
+- Existing official assets:
+  - `src/assets/restaurante-sampaio-logo.webp`
+  - `src/assets/restaurante-sampaio-hero.webp`
+- Exterior photo from the Douro e Tâmega tourism listing:
+  - https://turismo.douroetamega.pt/pages/851/?geo_article_id=4189
+- Gallery photos sourced from the public Google Maps listing for Restaurante Sampaio:
+  - https://g.page/restaurantesampaio-pt?share
+- The project owner explicitly authorized the reuse of these public images for this test version on 2026-07-16.
 
-## Constraints respected
+## Test menu and factual limits
 
-- No weekly opening hours were invented.
-- No dishes, prices, testimonials, awards, founding date, review count, certifications, or services were invented.
-- This is a conceptual demo for validation, not a live claim about the business.
+- The menu names, descriptions, and prices in `src/main.js` are intentionally fictional test content requested by the project owner.
+- The website displays a prominent warning beside the menu and in the footer so the test prices cannot be mistaken for the official offer.
+- No weekly opening hours, testimonials, awards, founding date, certifications, or review count are claimed.
+- The staging deployment remains `noindex,nofollow` until the real menu and final business content are supplied.
